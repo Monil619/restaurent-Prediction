@@ -1,0 +1,143 @@
+---
+title: "Restaurant Data Analysis"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    social: ["linkedin","pinterest","menu"]
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(knitr)
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+library(tidyr)
+library(corrgram)
+library(corrplot)
+library(plotly)
+library(gganimate)
+library(RColorBrewer)
+library(tm)
+library(wordcloud)
+library(heatmaply)
+library(viridis)
+library(viridisLite)
+
+df <- read.csv('C:/sem 2/EM-622/ProjectData.csv/ProjectData.csv')
+```
+
+Dashboard
+=================================================
+
+Column {data-width = 150}
+-----------------------------------------------------------------------
+
+### ValueBox
+
+```{r}
+valueBox(value = 129 ,icon = "fa-map",color = "orange",caption = "Total Locations" )
+```
+
+### ValueBox
+
+```{r}
+valueBox(value = "70.4%",icon = "fa-shopping-cart",color = "success",caption = "Online Order")
+```
+
+### ValueBox
+
+```{r}
+valueBox(value = "600",icon = "fa-inr",color = "primary",caption = "Median Cost For two")
+```
+
+### Average Rating
+
+```{r}
+gauge(4.0,min = 0,max = 5,
+      gaugeSectors(success = c(0,3.3),
+                    warning = c(3.4,3.7),
+                   danger = c(3.8,5)))
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Restaurant on Map
+
+```{r}
+maps <- read.csv('C:/sem 2/EM-622/Project/EM622-Project/Maps and location data/locations.csv')
+
+library(leaflet)
+library(magrittr) 
+library(htmltools)
+library(htmlwidgets)
+
+basicmap <- leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  addMarkers(data = maps,
+             lng = ~lon, lat = ~lat, popup = ~location,
+             label = ~htmlEscape(name))
+basicmap %>% 
+  addLayersControl(overlayGroups = c("name"))
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Top 10 Restaurant
+
+```{r}
+#Best Resturent Plot
+#Extracting Resto name from which maximim times people have ordered. 
+resttype <- df %>% select(name) %>% group_by(name) %>% count() %>% arrange(desc(n)) 
+resttype <- resttype[1:10,]
+
+#Ploting a Bar plot of Best resto
+res<-resttype %>%
+  ggplot(aes(x=reorder(name,n),y=n))+ 
+  geom_bar(stat = "identity", fill="steelblue") + 
+  coord_flip()+
+  #theme_minimal()+
+  labs(x = "Restaurants", y = "Orders Counts", title = "Best Restaurants")
+
+ggplotly(res)
+```
+
+### Locations w.r.t top restaurant
+
+```{r}
+#Best Location to built a resto
+df2 <- as.data.frame(table(df$location))
+df2 <- df2[order(-df2$Freq),]
+df2 <- head(df2, 10)
+best<-ggplot(df2, aes(x= reorder(Var1, -Freq), y = Freq))+
+  geom_col(fill = "#941a12")+
+  labs(x = "Location", y = "Number of restaurants")+
+  ggtitle("Number of restaurants by location")+
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplotly(best)
+```
+
+
+
+Data Set
+=================================================
+
+```{r}
+
+library(DT)
+
+loc <- read.csv('C:/sem 2/EM-622/Project/EM622-Project/Maps and location data/locations.csv')
+loc <- loc[,2:5]
+
+datatable(loc,extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy','print','csv'),scrollY="300px" , scrollX="300px" , pageLength = 100))
+                                                
+                                                
+
+
+```
